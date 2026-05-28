@@ -10,6 +10,71 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(UrlFixer::class)]
 final class UrlFixerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        \Domoquick\WpAccessAdmin\FilterRegistry::reset();
+    }
+
+    // ── register ──────────────────────────────────────────────────────────────
+
+    public function testRegisterAddsSiteUrlFilter(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+        $fixer->register();
+
+        self::assertContains('site_url', \Domoquick\WpAccessAdmin\FilterRegistry::$tags);
+    }
+
+    public function testRegisterDoesNotAddWpRedirectFilter(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+        $fixer->register();
+
+        self::assertNotContains('wp_redirect', \Domoquick\WpAccessAdmin\FilterRegistry::$tags);
+    }
+
+    // ── fixSiteUrl ────────────────────────────────────────────────────────────
+
+    public function testFixSiteUrlCorrectsLoginScheme(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+
+        self::assertSame(
+            'https://example.com/wp-login.php',
+            $fixer->fixSiteUrl('https://example.com/cms/wp-login.php', 'wp-login.php', 'login'),
+        );
+    }
+
+    public function testFixSiteUrlCorrectsLoginPostScheme(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+
+        self::assertSame(
+            'https://example.com/wp-login.php',
+            $fixer->fixSiteUrl('https://example.com/cms/wp-login.php', 'wp-login.php', 'login_post'),
+        );
+    }
+
+    public function testFixSiteUrlIgnoresAdminScheme(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+
+        self::assertSame(
+            'https://example.com/cms/wp-admin/',
+            $fixer->fixSiteUrl('https://example.com/cms/wp-admin/', 'wp-admin/', 'admin'),
+        );
+    }
+
+    public function testFixSiteUrlIgnoresNullScheme(): void
+    {
+        $fixer = $this->makeFixer('https://example.com/cms', 'https://example.com');
+
+        self::assertSame(
+            'https://example.com/cms/wp-cron.php',
+            $fixer->fixSiteUrl('https://example.com/cms/wp-cron.php', 'wp-cron.php', null),
+        );
+    }
+
     // ── fixUrl ────────────────────────────────────────────────────────────────
 
     public function testFixUrlReplacesSiteBaseWithHomeBase(): void
@@ -90,9 +155,24 @@ if (! function_exists(__NAMESPACE__ . '\trailingslashit')) {
     }
 }
 
+/**
+ * Registre des filtres enregistrés via add_filter() — usage tests uniquement.
+ */
+final class FilterRegistry
+{
+    /** @var list<string> */
+    public static array $tags = [];
+
+    public static function reset(): void
+    {
+        self::$tags = [];
+    }
+}
+
 if (! function_exists(__NAMESPACE__ . '\add_filter')) {
     function add_filter(string $tag, callable $callback, int $priority = 10, int $acceptedArgs = 1): bool
     {
+        FilterRegistry::$tags[] = $tag;
         return true;
     }
 }

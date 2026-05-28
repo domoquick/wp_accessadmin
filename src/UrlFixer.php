@@ -44,6 +44,20 @@ final class UrlFixer
         add_filter('login_url', $this->fixUrl(...), PHP_INT_MAX, 1);
         add_filter('logout_url', $this->fixUrl(...), PHP_INT_MAX, 1);
         add_filter('lostpassword_url', $this->fixUrl(...), PHP_INT_MAX, 1);
+        add_filter('site_url', $this->fixSiteUrl(...), PHP_INT_MAX, 3);
+    }
+
+    /**
+     * Filtre site_url — corrige uniquement les schemes liés au login (form action inclus).
+     * Les schemes admin/https/http/null ne sont pas touchés pour ne pas casser wp-admin.
+     */
+    public function fixSiteUrl(string $url, string $path, ?string $scheme): string
+    {
+        if (! in_array($scheme, ['login', 'login_post'], true)) {
+            return $url;
+        }
+
+        return $this->fixUrl($url);
     }
 
     /**
