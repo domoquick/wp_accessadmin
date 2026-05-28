@@ -6,7 +6,7 @@ WordPress plugin — Corrige les URLs login/logout/lostpassword lorsque WordPres
 
 En Bedrock, `site_url()` inclut le sous-dossier d'installation (ex. `/cms/`), tandis que `home_url()` pointe sur la racine publique. Les plugins qui construisent leurs URLs custom sur `site_url()` génèrent des URLs avec un préfixe non voulu (ex. `/cms/custom-login` au lieu de `/custom-login`).
 
-Ce plugin filtre `login_url`, `logout_url` et `lostpassword_url` en dernier recours (`PHP_INT_MAX`) pour remplacer la base `site_url()` par `home_url()`.
+Ce plugin filtre `login_url`, `logout_url`, `lostpassword_url` et `site_url` (schemes `login` / `login_post`) en dernier recours (`PHP_INT_MAX`) pour remplacer la base `site_url()` par `home_url()`, y compris dans l'action du formulaire de connexion généré par WordPress core.
 
 ## Compatibilité
 
@@ -32,7 +32,7 @@ Copier le dossier `wp_accessadmin/` dans `wp-content/plugins/` et activer depuis
 make test
 ```
 
-6 tests, 8 assertions.
+12 tests, 12 assertions.
 
 ## Licence
 
